@@ -23,4 +23,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['username', 'avatar']
 
+    # def update(self, instance, validated_data):
+    #     if 'avatar' in validated_data:
+    #         instance.avatar = validated_data['avatar']
+    #     if 'username' in validated_data:
+    #         instance.username = validated_data['username']
+    #     instance.save()
+    #     return instance
 
