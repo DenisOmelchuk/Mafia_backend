@@ -1,5 +1,4 @@
 import os
-
 from django.contrib.auth import login
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -46,9 +45,39 @@ def user_update(request):
     serializer = UserProfileSerializer(user, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
-        os.remove(old_avatar)
+        if 'avatar' in request.FILES:
+            os.remove(old_avatar)
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_friends(request):
+    if not isinstance(request.user, CustomUser):
+        return Response({"error": "Only authenticated users can access this endpoint."}, status=403)
+
+    user = request.user
+    friends = user.friends.all()
+    serializer = UserProfileSerializer(friends, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_friend(request):
+    user = request.user
+    try:
+        friend_to_delete = CustomUser.objects.get(username=request.data['username'])
+    except CustomUser.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if friend_to_delete in user.friends.all():
+        user.friends.remove(friend_to_delete)
+        return Response({"message": "Friend removed successfully"}, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "User is not in your friends list"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
