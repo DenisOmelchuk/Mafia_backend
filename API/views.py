@@ -79,11 +79,43 @@ def delete_friend(request):
         return Response({"error": "User is not in your friends list"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def search_users(request):
+    part_of_username = request.data.get('username', None)
+    if part_of_username:
+        current_user = request.user
+        users = CustomUser.objects.filter(
+            username__icontains=part_of_username
+        ).exclude(
+            id=current_user.id
+        ).exclude(
+            friends=current_user
+        ).exclude(
+            friends_request_sent=current_user
+        ).exclude(
+            friends_request_received=current_user
+        )[:5]
+
+        if users.exists():
+            serializer = UserProfileSerializer(users, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({'error': 'No users were found'}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({'error': 'Username not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
-
-
-
-
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def send_friend_request(request):
+    user = request.user
+    try:
+        requested_user = CustomUser.objects.get(username=request.data['username'])
+        if requested_user != user:
+            requested_user.friends_request_received.add(user)
+            user.friends_request_sent.add(requested_user)
+            return Response({"success": "Friend request sent"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "You cannot send a friend request to yourself"}, status=status
+                            .HTTP_400_BAD_REQUEST)
+    except CustomUser.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
