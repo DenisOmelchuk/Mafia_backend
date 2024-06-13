@@ -1,9 +1,10 @@
 import os
 from django.contrib.auth import login
+from django.shortcuts import render
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from API.serializers import RegisterUserSerializer, UserProfileSerializer
-from .models import CustomUser
+from .models import CustomUser, Message, FriendRequest
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -85,16 +86,26 @@ def search_users(request):
     part_of_username = request.data.get('username', None)
     if part_of_username:
         current_user = request.user
+        friend_requests_from_user = FriendRequest.objects.filter(from_user=current_user)
+        friend_requests_to_user = FriendRequest.objects.filter(to_user=current_user)
+
+        # users = CustomUser.objects.filter(
+        #     username__icontains=part_of_username
+        # ).exclude(
+        #     id=current_user.id
+        # ).exclude(
+        #     friends=current_user
+        # ).exclude(
+        #     id__in=friend_requests_from_user.values_list('to_user__id', flat=True)
+        # ).exclude(
+        #     id__in=friend_requests_to_user.values_list('from_user__id', flat=True)
+        # )[:5]
         users = CustomUser.objects.filter(
             username__icontains=part_of_username
         ).exclude(
             id=current_user.id
         ).exclude(
             friends=current_user
-        ).exclude(
-            friends_request_sent=current_user
-        ).exclude(
-            friends_request_received=current_user
         )[:5]
 
         if users.exists():
@@ -111,8 +122,9 @@ def send_friend_request(request):
     try:
         requested_user = CustomUser.objects.get(username=request.data['username'])
         if requested_user != user:
-            requested_user.friends_request_received.add(user)
-            user.friends_request_sent.add(requested_user)
+            FriendRequest.objects.create(from_user=user, to_user=requested_user)
+            # requested_user.friends_request_received.add(user)
+            # user.friends_request_sent.add(requested_user)
             return Response({"success": "Friend request sent"}, status=status.HTTP_200_OK)
         else:
             return Response({"error": "You cannot send a friend request to yourself"}, status=status

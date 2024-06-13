@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import registration, user_profile, user_update, list_friends, delete_friend, search_users, send_friend_request
+from .views import registration, user_profile, user_update, list_friends, delete_friend, search_users, \
+    send_friend_request, index, room
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
