@@ -6,7 +6,7 @@ from .models import FriendRequest
 
 
 @receiver(post_save, sender=FriendRequest)
-def notification_created(sender, instance, created, **kwargs):
+def notification_friend_request_created(sender, instance, created, **kwargs):
     if created:
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(

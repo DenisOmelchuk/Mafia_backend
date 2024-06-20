@@ -3,6 +3,10 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 
+from API.models import CustomUser
+
+gm = CustomUser.objects.get(username='Martin')
+
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -33,14 +37,15 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_discard(room_group_name, self.channel_name)
 
     async def friend_request(self, event):
-        # Handle friend request
-        username = event.get('username')
-        avatar = event.get('avatar')
-        if username and avatar:
-            await self.send(text_data=json.dumps({
-                'username': username,
-                'avatar': avatar
-            }))
+        friend_requests = [
+            {
+                'username': event.get('username'),
+                'avatar': event.get('avatar'),
+            }
+        ]
+        await self.send(text_data=json.dumps({
+            'friend_requests': friend_requests
+        }))
 
     @sync_to_async
     def mark_user_as_online(self, user):

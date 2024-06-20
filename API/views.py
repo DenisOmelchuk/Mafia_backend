@@ -4,7 +4,7 @@ from django.shortcuts import render
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from API.serializers import RegisterUserSerializer, UserProfileSerializer
-from .models import CustomUser, Message, FriendRequest
+from .models import CustomUser, FriendRequest
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -129,5 +129,43 @@ def send_friend_request(request):
         else:
             return Response({"error": "You cannot send a friend request to yourself"}, status=status
                             .HTTP_400_BAD_REQUEST)
+    except CustomUser.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def friend_request_accept(request):
+    user = request.user
+    try:
+        requested_user = CustomUser.objects.get(username=request.data['username'])
+        try:
+            friend_request = FriendRequest.objects.get(from_user=requested_user, to_user=user)
+            user.friends.add(requested_user)
+            requested_user.friends.add(user)
+            friend_request.delete()
+            return Response({"success": "Friend request accepted"}, status=status.HTTP_200_OK)
+
+        except FriendRequest.DoesNotExist:
+            return Response({"error": "Friend request not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    except CustomUser.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def friend_request_refuse(request):
+    user = request.user
+    try:
+        requested_user = CustomUser.objects.get(username=request.data['username'])
+        try:
+            friend_request = FriendRequest.objects.get(from_user=requested_user, to_user=user)
+            friend_request.delete()
+            return Response({"success": "Friend request accepted"}, status=status.HTTP_200_OK)
+
+        except FriendRequest.DoesNotExist:
+            return Response({"error": "Friend request not found"}, status=status.HTTP_404_NOT_FOUND)
+
     except CustomUser.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
