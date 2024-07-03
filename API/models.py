@@ -7,6 +7,7 @@ class CustomUser(AbstractUser):
     avatar = models.ImageField(null=True, blank=False)
     friends = models.ManyToManyField('self', blank=True, related_name='friends')
     is_online = models.BooleanField(default=False)
+    role = models.CharField(max_length=15)
 
     REQUIRED_FIELDS = ['avatar']
 
@@ -23,10 +24,19 @@ class FriendRequest(models.Model):
         return f"{self.from_user.username} -> {self.to_user.username}"
 
 
-class RoomMember(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    token = models.CharField(max_length=1000)
-    channel = models.CharField(max_length=200)
+class GameRoom(models.Model):
+    host = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='hosted_rooms')
+    channel = models.CharField(max_length=9, unique=True)
+    expected_players_count = models.IntegerField()
+    current_players_count = models.IntegerField(default=0)
+    is_started = models.BooleanField(default=False)
+    time_created = models.DateTimeField(auto_now_add=True)
+    players = models.ManyToManyField(CustomUser, related_name='joined_room', blank=True)
+
+    def add_player(self, user):
+        self.players.add(user)
+        self.current_players_count += 1
+        self.save()
 
     def __str__(self):
-        return f"{self.user.username} in {self.channel}"
+        return self.channel

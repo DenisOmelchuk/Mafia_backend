@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from API.models import RoomMember, CustomUser
+from API.models import CustomUser
 from django.contrib.auth import authenticate
 
 
@@ -30,4 +30,3 @@ class UserProfileSerializer(serializers.ModelSerializer):
     #         instance.username = validated_data['username']
     #     instance.save()
     #     return instance
-

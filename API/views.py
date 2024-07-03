@@ -4,10 +4,11 @@ from django.shortcuts import render
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from API.serializers import RegisterUserSerializer, UserProfileSerializer
-from .models import CustomUser, FriendRequest
+from .models import CustomUser, FriendRequest, GameRoom
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
+from .utils import get_agora_token, generate_unique_channel_token
 
 
 @api_view(['POST'])
@@ -169,3 +170,21 @@ def friend_request_refuse(request):
 
     except CustomUser.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_game(request):
+    user = request.user
+    players_count = request.data.get('players_count')
+    if players_count > 13 or players_count < 5:
+        return Response({'error': 'Invalid players count'}, status=status.HTTP_400_BAD_REQUEST)
+    channel = generate_unique_channel_token()
+    agora_token = get_agora_token(user.id, channel)
+    game_room = GameRoom.objects.create(
+        host=user,
+        expected_players_count=players_count,
+        channel=channel,
+    )
+    game_room.add_player(user)
+    return Response({'agora_token': agora_token, 'channel': channel}, status=status.HTTP_200_OK)

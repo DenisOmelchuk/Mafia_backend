@@ -3,10 +3,6 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 
-from API.models import CustomUser
-
-gm = CustomUser.objects.get(username='Martin')
-
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
